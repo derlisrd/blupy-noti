@@ -45,12 +45,6 @@ export class AndroidService {
           body: title,
           title: body
         }
-      },
-      android: {
-        ttl: "86400s",
-        notification: {
-          click_action: "OPEN_ACTIVITY_1"
-        }
       }
     };
 
