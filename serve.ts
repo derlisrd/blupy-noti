@@ -1,8 +1,13 @@
+import * as dotenv from 'dotenv';
+
 import Fastify from 'fastify'
 import { fastifyCors } from '@fastify/cors';
 import  api  from './src/routes/api.js';
 import config from './src/app/config.js';
 import { apikeymiddleware } from './src/middleware/apikey.middleware.js';
+
+
+dotenv.config();
 
 const app = Fastify({
   logger: true,
