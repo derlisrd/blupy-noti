@@ -1,7 +1,9 @@
 
 import { JWT } from "google-auth-library";
-import fcm from "../../fcm.json";
+import fs from "fs";
 import { DifusionNotificationSchema } from "../schemas/notifications/notification.schema.js";
+
+const fcm = JSON.parse(fs.readFileSync("./fcm.json", "utf-8"));
 
 export class AndroidService {
   private authorizationToken: string = "";
