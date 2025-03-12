@@ -1,7 +1,7 @@
 export default {
     body: {
       type: "object",
-      required: ["tokens", "title", "body"], // "token" -> "tokens"
+      required: ["tokens", "title", "body", "type"], // "token" -> "tokens"
       properties: {
         tokens: { 
           type: "array", 
@@ -10,7 +10,8 @@ export default {
           maxItems: 100 // Opcionalmente, puedes limitar la cantidad máxima de tokens
         },
         title: { type: "string", minLength: 1 },
-        body: { type: "string", minLength: 1 }
+        body: { type: "string", minLength: 1 },
+        type: { type: "string", enum: ["ios", "android"] }
       }
     }
   };
