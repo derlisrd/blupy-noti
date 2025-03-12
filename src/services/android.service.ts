@@ -1,6 +1,6 @@
 
 import { JWT } from "google-auth-library";
-import fcm from "../../fcm.js";
+import fcm from "../../fcm.json";
 import { DifusionNotificationSchema } from "../schemas/notifications/notification.schema.js";
 
 export class AndroidService {

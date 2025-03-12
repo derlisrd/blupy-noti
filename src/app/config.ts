@@ -1,4 +1,4 @@
-const {PORT, BUNDLE_ID, PRIVATE_KEY, PROJECT_ID, ISS,KID, APNFILE} =  process.env
+const {PORT, BUNDLE_ID, PRIVATE_KEY, PROJECT_ID, ISS,KID, APNFILE, FCM_CLIENT_EMAIL, FCM_PRIVATE_KEY } =  process.env
 
 export default {
     PORT : Number(PORT) || 5173,
@@ -7,5 +7,7 @@ export default {
     PROJECT_ID,
     ISS,
     KID,
-    APNFILE
+    APNFILE,
+    FCM_CLIENT_EMAIL,
+    FCM_PRIVATE_KEY
 }
