@@ -7,11 +7,11 @@ import difusionNotificationValidate from "../schemas/validations/difusion.notifi
 
 
 async function api(app: FastifyInstance) {
- app.post('/send-notification', {schema: difusionNotificationValidate}, async (request, response: FastifyReply) => {
+ app.post('/send-push-single', {schema: difusionNotificationValidate}, async (request, response: FastifyReply) => {
     const body = request.body as DifusionNotificationSchema
     return NotificationController.sendSingleNotification(body, response)
   })
-  app.post('/send-difusion', {schema: difusionNotificationValidate}, async (request, response) => {
+  app.post('/send-push-difusion', {schema: difusionNotificationValidate}, async (request, response) => {
     return NotificationController.sendDifusionNotification(request.body as DifusionNotificationSchema, response)
   })
 }
