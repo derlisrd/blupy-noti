@@ -42,8 +42,8 @@ export class AndroidService {
       message: {
         token: token,
         notification: {
-          body: title,
-          title: body
+          body: body,
+          title: title
         }
       }
     };
