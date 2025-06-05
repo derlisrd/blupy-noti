@@ -24,6 +24,18 @@ export class NotificationController {
                     }
                 };
             }
+            if (type === "android") {
+                const { success, failed } = await this.AndroidService.sendBatchNotifications(req);
+                return ({
+                    success: true,
+                    message: "Batch notifications processed",
+                    results: {
+                        success: success,
+                        failed: failed.length,
+                        errors: failed
+                    }
+                });
+            }
 
             return response.status(200).send({ success: true, message: "Notification sent successfully" });
         } catch (error) {
