@@ -3,14 +3,16 @@
 import express from "express";
 import routeApi from "./src/routes/api.js";
 import config from './src/app/config.js';
+import cors from 'cors'
 
 
 const app = express();
 
 
+app.use(cors())
 app.use(express.json());
+app.use('/api',  routeApi);
 
-app.use('/api',routeApi)
 
 const PORT = config.PORT;
 app.listen(PORT, () => {

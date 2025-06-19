@@ -1,9 +1,11 @@
-import { Request, Response, Router} from "express";
+import { Request, Response, Router, RequestHandler} from "express";
 import { NotificationController } from "../controllers/notificationcontroller.js";
+import { apikeymiddleware } from "../middleware/apikey.middleware.js";
 
 
 const router = Router();
 
+router.use(apikeymiddleware as RequestHandler);
 
 router.post("/send-push-single", async (req: Request, res: Response) => {
  const response = await NotificationController.sendSingleNotification(req.body);
