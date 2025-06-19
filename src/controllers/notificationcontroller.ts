@@ -1,6 +1,6 @@
 
 
-import { FastifyReply } from "fastify";
+
 import { DifusionNotificationSchema } from '../schemas/notifications/notification.schema.js';
 import { IOSService} from "../services/ios.service.js";
 import { AndroidService } from "../services/android.service.js";
@@ -9,7 +9,7 @@ export class NotificationController {
     private static IosService = new IOSService();
     private static AndroidService = new AndroidService();
 
-    static async sendSingleNotification(req: DifusionNotificationSchema, response: FastifyReply) {
+    static async sendSingleNotification(req: DifusionNotificationSchema) {
         const { type } = req;
         try {
             if (type === "ios") {
@@ -37,20 +37,20 @@ export class NotificationController {
                 });
             }
 
-            return response.status(200).send({ success: true, message: "Notification sent successfully" });
+            return { success: true, message: "Notification sent successfully", results: null}
         } catch (error) {
             console.error(error);
-            return response.status(500).send({ success: false, message: error });
+            return ({ success: false, message: error, results: null });
         }
     }
 
     
 
-    static async sendDifusionNotification(req : DifusionNotificationSchema, reply: FastifyReply) {
+    static async sendDifusionNotification(req : DifusionNotificationSchema) {
         const { tokens, title, body, type } = req
         if (type === "ios") {
             const { success, failed } = await this.IosService.sendBatchNotifications({ tokens, title, body, type });
-            return reply.status(200).send({
+            return ({
                 success: true,
                 message: "Batch notifications processed",
                 results: {
@@ -62,7 +62,7 @@ export class NotificationController {
         }
         if (type === "android") {
             const { success, failed } = await this.AndroidService.sendBatchNotifications({ tokens, title, body, type });
-            return reply.status(200).send({
+            return ({
                 success: true,
                 message: "Batch notifications processed",
                 results: {
@@ -72,7 +72,7 @@ export class NotificationController {
                 }
             });
         }
-        return reply.status(400).send({
+        return ({
             success: false,
             message: "Invalid notification type",
             results: null

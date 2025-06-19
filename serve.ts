@@ -1,15 +1,24 @@
 
 
-import Fastify from 'fastify'
-import { fastifyCors } from '@fastify/cors';
-import  api  from './src/routes/api.js';
+import express from "express";
+import routeApi from "./src/routes/api.js";
 import config from './src/app/config.js';
-import { apikeymiddleware } from './src/middleware/apikey.middleware.js';
 
 
+const app = express();
 
 
-const app = Fastify({
+app.use(express.json());
+
+app.use('/api',routeApi)
+
+const PORT = config.PORT;
+app.listen(PORT, () => {
+  console.log(`Server running http://localhost:${PORT}`);
+});
+
+
+/* const app = Fastify({
   logger: true,
 })
 
@@ -35,4 +44,4 @@ const start = async () => {
     process.exit(1)
   }
 }
-start()
+start() */

@@ -30,7 +30,9 @@ export class IOSService {
             successCount += results.filter(res => res.status === "fulfilled").length;
             failed.push(...results.filter(res => res.status === "rejected").map(res => (res as PromiseRejectedResult).reason));
         }
-
+        if(failed.length > 0) {
+            console.log("Failed notifications:", failed);
+        }
         return { success: successCount, failed };
     }
 
