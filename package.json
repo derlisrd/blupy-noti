@@ -20,13 +20,15 @@
     "express": "5.1.0",
     "google-auth-library": "^9.15.1",
     "http2": "3.3.7",
-    "jsonwebtoken": "9.0.2"
+    "jsonwebtoken": "9.0.2",
+    "winston": "3.17.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.10",
+    "@types/winston": "^2.4.4",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",

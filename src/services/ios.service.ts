@@ -3,6 +3,7 @@ import fs from "fs";
 import jwt from "jsonwebtoken";
 import config from "../app/config.js";
 import { DifusionNotificationSchema } from "../schemas/notifications/notification.schema.js";
+import { logger } from "./logger.service.js";
 
 export class IOSService {
   bundleId: string = "";
@@ -11,27 +12,66 @@ export class IOSService {
   private static readonly BATCH_SIZE = 100;
   
   constructor() {
-    this.client = http2.connect("https://api.push.apple.com");
-    this.authorizationToken = this.getAuthorizationToken();
-    this.bundleId = config.BUNDLE_ID;
+    try {
+      this.client = http2.connect("https://api.push.apple.com");
+      this.authorizationToken = this.getAuthorizationToken();
+      this.bundleId = config.BUNDLE_ID;
+      
+      logger.info("IOSService inicializado correctamente", {
+        bundleId: this.bundleId,
+        batchSize: IOSService.BATCH_SIZE
+      });
+    } catch (error) {
+      logger.error("Error al inicializar IOSService", error as Error, {
+        bundleId: config.BUNDLE_ID
+      });
+      throw error;
+    }
   }
 
 
   
     
     async sendBatchNotifications({tokens,title,body}:DifusionNotificationSchema): Promise<{ success: number, failed: any[] }> {
+
+        const startTime = Date.now();
+      
         const batches = this.chunkArray(tokens, IOSService.BATCH_SIZE);
         let successCount = 0;
         let failed: any[] = [];
 
-        for (const batch of batches) {
-            const results = await Promise.allSettled(batch.map(token => this.sendSingleNotification(token, title, body)));
+        for (let i = 0; i < batches.length; i++) {
+            const batch = batches[i];
+
+            try {
+              const results = await Promise.allSettled(batch.map(token => this.sendSingleNotification(token, title, body)));
             
-            successCount += results.filter(res => res.status === "fulfilled").length;
-            failed.push(...results.filter(res => res.status === "rejected").map(res => (res as PromiseRejectedResult).reason));
+              const batchSuccess = results.filter(res => res.status === "fulfilled").length;
+              const batchFailed = results.filter(res => res.status === "rejected");
+              
+              successCount += batchSuccess;
+              failed.push(...batchFailed.map(res => (res as PromiseRejectedResult).reason));
+              
+              
+            } catch (error) {
+              logger.error(`Error procesando lote ${i + 1}`, error as Error, {
+                batchNumber: i + 1,
+                batchSize: batch.length
+              });
+              failed.push({ batchNumber: i + 1, error: (error as Error).message });
+            }
+
         }
-        if(failed.length > 0) {
-            console.log("Failed notifications:", failed);
+        const totalDuration = Date.now() - startTime;
+      
+        if (failed.length > 0) {
+          logger.warn("Notificaciones fallidas detectadas", {
+            successCount,
+            failedCount: failed.length,
+            totalTokens: tokens.length,
+            successRate: ((successCount / tokens.length) * 100).toFixed(2) + '%',
+            duration: totalDuration
+          });
         }
         return { success: successCount, failed };
     }
