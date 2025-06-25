@@ -17,10 +17,6 @@ export class IOSService {
       this.authorizationToken = this.getAuthorizationToken();
       this.bundleId = config.BUNDLE_ID;
       
-      logger.info("IOSService inicializado correctamente", {
-        bundleId: this.bundleId,
-        batchSize: IOSService.BATCH_SIZE
-      });
     } catch (error) {
       logger.error("Error al inicializar IOSService", error as Error, {
         bundleId: config.BUNDLE_ID

@@ -22,7 +22,7 @@ class Logger {
         winston.format.json()
       ),
       defaultMeta: { 
-        service: 'mi-aplicacion',
+        service: 'push',
         version: process.env.npm_package_version 
       },
       transports: [
