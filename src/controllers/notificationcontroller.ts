@@ -10,13 +10,7 @@ export class NotificationController {
   static async sendPushAndroidWithToken(req: DifusionNotificationSchema) {
     const { tokens, title, body, type } = req;
     if (type === "android") {
-      const message = {
-        notification: {
-          title: title,
-          body: body
-        },
-        token: tokens[0]
-      };
+      
       const validTokens = tokens.filter((token) => token && token.trim().length > 0);
       const BATCH_SIZE = 500;
       const batches = this.chunkArray(validTokens, BATCH_SIZE);
@@ -112,13 +106,13 @@ export class NotificationController {
       };
     }
     if (type === "android") {
-      const { success, failed } = await this.AndroidService.sendBatchNotifications({ tokens, title, body, type });
+      const { success, failed } = await this.AndroidService.sendChunckNotification({ tokens, title, body, type });
       return {
         success: true,
         message: "Batch notifications processed",
         results: {
           success: success,
-          failed: failed.length,
+          failed: failed,
           errors: failed
         }
       };

@@ -3,6 +3,7 @@ import { JWT } from "google-auth-library";
 import fs from "fs";
 import { DifusionNotificationSchema } from "../schemas/notifications/notification.schema.js";
 import { logger } from "./logger.service.js";
+import firebase from "firebase-admin";
 
 type AccessTokenType = {
   access_token: string;
@@ -53,10 +54,46 @@ export class AndroidService {
     }
   }
 
+  async sendChunckNotification({ tokens, title, body }: DifusionNotificationSchema): Promise<{ success: number; failed: number }> {
+      const validTokens = tokens.filter((token) => token && token.trim().length > 0);
+      const BATCH_SIZE = 500;
+      const batches = this.chunkArray(validTokens, BATCH_SIZE);
+      let totalSuccessCount = 0;
+      let totalFailureCount = 0;
+      let allFailedTokens: string[] = [];
+      let allResponses: any[] = [];
+
+      for (const batch of batches) {
+        try {
+          const multicastMessage = {
+            notification: {
+              title: title,
+              body: body
+            },
+            tokens: batch
+          };
+          const response = await firebase.messaging().sendEachForMulticast(multicastMessage);
+          totalSuccessCount += response.successCount;
+          totalFailureCount += response.failureCount;
+          allResponses.push(response);
+          console.log(`Lote procesado: ${response.successCount} éxitos, ${response.failureCount} fallos`);
+          
+        } catch (batchError) {
+          console.error("Error en lote:", batchError);
+          totalFailureCount += batch.length;
+          allFailedTokens.push(...batch);
+        }
+      }
+      return  {
+        success: totalSuccessCount,
+        failed: totalFailureCount
+      }
+    
+  } 
+
 
 
   async sendBatchNotifications({ tokens, title, body }: DifusionNotificationSchema): Promise<{ success: number; failed: any[] }> {
-    const startTime = Date.now();
     const requestId = this.generateRequestId();
     
     logger.info("Iniciando envío de notificaciones Android por lotes", {
