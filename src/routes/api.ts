@@ -17,6 +17,11 @@ router.post('/send-push-difusion', async (req: Request, res: Response)=> {
   res.json(response);
 })
 
+router.post('/send-push-single-android', async (req: Request, res: Response)=> {
+  const response = await NotificationController.sendSingleAndroidWithToken(req.body)
+  res.json(response);
+})
+
 export default router;
 
 
