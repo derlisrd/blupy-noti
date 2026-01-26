@@ -10,3 +10,5 @@ node_modules/*
 dist
 dist/*
 logs/*
+
+pnpm-lock.yaml

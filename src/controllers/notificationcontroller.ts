@@ -8,7 +8,7 @@ export class NotificationController {
   private static AndroidService = new AndroidService();
 
   static async sendPushAndroidWithToken(req: DifusionNotificationSchema) {
-    const { tokens, title, body, type } = req;
+    const { tokens, title, body, type, data, image} = req;
     if (type === "android") {
       
       const validTokens = tokens.filter((token) => token && token.trim().length > 0);
@@ -24,8 +24,10 @@ export class NotificationController {
           const multicastMessage = {
             notification: {
               title: title,
-              body: body
+              body: body,
+              image: image ?? null
             },
+            data: data,
             tokens: batch
           };
           const response = await firebase.messaging().sendEachForMulticast(multicastMessage);

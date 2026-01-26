@@ -10,5 +10,7 @@ export interface DifusionNotificationSchema {
   body: string;
   title: string;
   type: "ios" | "android";
+  data?: Record<string, string>;
+  image?: string;
 }
   

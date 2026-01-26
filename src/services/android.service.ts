@@ -14,6 +14,9 @@ type AccessTokenType = {
 
 const fcm = JSON.parse(fs.readFileSync("./fcm.json", "utf-8"));
 
+
+// Extiende el schema para incluir datos
+
 export class AndroidService {
   private authorizationToken: string = "";
   private static readonly BATCH_SIZE = 100;
@@ -54,7 +57,7 @@ export class AndroidService {
     }
   }
 
-  async sendChunckNotification({ tokens, title, body }: DifusionNotificationSchema): Promise<{ success: number; failed: number }> {
+  async sendChunckNotification({ tokens, title, body,data }: DifusionNotificationSchema): Promise<{ success: number; failed: number }> {
       const validTokens = tokens.filter((token) => token && token.trim().length > 0);
       const BATCH_SIZE = 500;
       const batches = this.chunkArray(validTokens, BATCH_SIZE);
@@ -70,6 +73,7 @@ export class AndroidService {
               title: title,
               body: body
             },
+            data: data,
             tokens: batch
           };
           const response = await firebase.messaging().sendEachForMulticast(multicastMessage);
@@ -93,14 +97,15 @@ export class AndroidService {
 
 
 
-  async sendBatchNotifications({ tokens, title, body }: DifusionNotificationSchema): Promise<{ success: number; failed: any[] }> {
+  async sendBatchNotifications({ tokens, title, body, data }: DifusionNotificationSchema): Promise<{ success: number; failed: any[] }> {
     const requestId = this.generateRequestId();
     
     logger.info("Iniciando envío de notificaciones Android por lotes", {
       requestId,
       totalTokens: tokens.length,
       batchSize: AndroidService.BATCH_SIZE,
-      title
+      title,
+      hasData: !!data
     });
     
     
@@ -110,7 +115,7 @@ export class AndroidService {
 
     for (const batch of batches) {
       await this.ensureValidToken();
-      const results = await Promise.allSettled(batch.map((token) => this.sendSingleNotification(token, title, body)));
+      const results = await Promise.allSettled(batch.map((token) => this.sendSingleNotification(token, title, body, data)));
 
       successCount += results.filter((res) => res.status === "fulfilled").length;
       failed.push(...results.filter((res) => res.status === "rejected").map((res) => (res as PromiseRejectedResult).reason));
@@ -119,17 +124,22 @@ export class AndroidService {
     return { success: successCount, failed };
   }
 
-  private async sendSingleNotification(token: string, title: string, body: string) {
+  private async sendSingleNotification(token: string, title: string, body: string, data?: Record<string, any>) {
+
     const messageBody = {
       message: {
         token: token,
         notification: {
           body: body,
-          title: title
-        }
+          title: title,
+          "image": "https://cat.10515.net/1.jpg"
+        },
+      },
+      android:{
+        priority: "high"
       }
     };
-
+console.log("Enviando:", JSON.stringify(messageBody, null, 2));
     const response = await fetch(`https://fcm.googleapis.com/v1/projects/blupy-noti/messages:send`, {
       method: "POST",
       headers: {
@@ -169,5 +179,26 @@ export class AndroidService {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+private prepareDataForExpo(data: Record<string, any>): Record<string, string> {
+    const preparedData: Record<string, string> = {};
+    
+    // Convertir todos los valores a string
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null) {
+        if (typeof value === 'object') {
+          preparedData[key] = JSON.stringify(value);
+        } else {
+          preparedData[key] = String(value);
+        }
+      }
+    }
+    
+    // Campos especiales para Expo
+    preparedData._displayInForeground = "true";
+    preparedData._priority = "high";
+    
+    return preparedData;
   }
 }

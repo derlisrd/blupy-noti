@@ -1,45 +1,37 @@
-import { Request, Response, Router, RequestHandler} from "express";
-import { NotificationController } from "../controllers/notificationcontroller.js";
-import { apikeymiddleware } from "../middleware/apikey.middleware.js";
+import { Request, Response, Router, RequestHandler } from "express";
 
+import { apikeymiddleware } from "../middleware/apikey.middleware.js";
+import { validateRequest } from "../schemas/validations/validate-request.js";
+import { AndroidPushSchema } from "../schemas/android-push-schema.js";
+import { IosPushSchema } from "../schemas/ios-push-schema.js";
+
+import { NotificationController } from "../controllers/notificationcontroller.js";
+
+import NotificationAndroidController from "../controllers/notification-android-controller.js";
+import NotificationIosController from "../controllers/notification-ios-controller.js";
 
 const router = Router();
 
 router.use(apikeymiddleware as RequestHandler);
 
 router.post("/send-push-single", async (req: Request, res: Response) => {
- const response = await NotificationController.sendSingleNotification(req.body);
- res.json(response);
+  const response = await NotificationController.sendSingleNotification(req.body);
+  return res.json(response);
 });
 
-router.post('/send-push-difusion', async (req: Request, res: Response)=> {
-  const response = await NotificationController.sendDifusionNotification(req.body)
-  res.json(response);
-})
+router.post("/send-push-difusion", async (req: Request, res: Response) => {
+  const response = await NotificationController.sendDifusionNotification(req.body);
+  return res.json(response);
+});
 
-router.post('/send-push-android', async (req: Request, res: Response)=> {
-  const response = await NotificationController.sendPushAndroidWithToken(req.body)
-  res.json(response);
-})
+router.post("/send-push-ios", validateRequest(IosPushSchema), async (req: Request, res: Response) => {
+  const response = await NotificationIosController.sendPushIosWithToken(req.body)
+  return res.json(response);
+});
+router.post("/send-push-android", validateRequest(AndroidPushSchema), async (req: Request, res: Response) => {
+  const response = await NotificationAndroidController.sendPushAndroidWithToken(req.body);
+  return res.json(response);
+});
 
 export default router;
 
-
-/* import { FastifyInstance, FastifyReply } from "fastify";
-import { NotificationController } from "../controllers/notificationcontroller.js";
-import { DifusionNotificationSchema } from "../schemas/notifications/notification.schema.js";
-import difusionNotificationValidate from "../schemas/validations/difusion.notification.validate.js";
-
-
-
-
-async function api(app: FastifyInstance) {
- app.post('/send-push-single', {schema: difusionNotificationValidate}, async (request, response: FastifyReply) => {
-    const body = request.body as DifusionNotificationSchema
-    return NotificationController.sendSingleNotification(body, response)
-  })
-  app.post('/send-push-difusion', {schema: difusionNotificationValidate}, async (request, response) => {
-    return NotificationController.sendDifusionNotification(request.body as DifusionNotificationSchema, response)
-  })
-}
-export default api; */

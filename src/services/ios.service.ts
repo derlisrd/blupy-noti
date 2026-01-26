@@ -26,58 +26,8 @@ export class IOSService {
     }
   }
 
-  private initializeConnection(): void {
-    try {
-      // Cerrar conexión existente si existe
-      if (this.client && !this.client.closed && !this.client.destroyed) {
-        this.client.close();
-      }
 
-      this.client = http2.connect("https://api.push.apple.com");
-      
-      // Manejar eventos de la conexión
-      this.client.on('error', (err) => {
-        logger.error("Error en conexión HTTP2", err, { operation: 'connection' });
-        this.client = null;
-      });
-
-      this.client.on('close', () => {
-        logger.debug("Conexión HTTP2 cerrada");
-        this.client = null;
-      });
-
-      this.client.on('goaway', (errorCode, lastStreamID) => {
-        logger.warn("Servidor envió GOAWAY", { 
-          errorCode, 
-          lastStreamID,
-          message: "Reconectando..."
-        });
-        this.client = null;
-      });
-
-      logger.debug("Nueva conexión HTTP2 establecida");
-    } catch (error) {
-      logger.error("Error estableciendo conexión HTTP2", error as Error);
-      throw error;
-    }
-  }
-
-  private ensureValidConnection(): void {
-    // Verificar si necesitamos renovar el token (cada 50 minutos)
-    const now = Date.now();
-    if (now > this.tokenExpirationTime) {
-      logger.debug("Renovando token de autorización");
-      this.authorizationToken = this.getAuthorizationToken();
-    }
-
-    // Verificar si necesitamos una nueva conexión
-    if (!this.client || this.client.closed || this.client.destroyed) {
-      logger.debug("Reconectando - conexión no válida");
-      this.initializeConnection();
-    }
-  }
-
-  async sendBatchNotifications({tokens, title, body}: DifusionNotificationSchema): Promise<{ success: number, failed: any[] }> {
+  async sendBatchNotifications({tokens, title, body, data}: DifusionNotificationSchema): Promise<{ success: number, failed: any[] }> {
     const startTime = Date.now();
     const requestId = this.generateRequestId();
     
@@ -85,7 +35,8 @@ export class IOSService {
       requestId,
       totalTokens: tokens.length,
       batchSize: IOSService.BATCH_SIZE,
-      title
+      title,
+      hasData: !!data
     });
 
     try {
@@ -110,7 +61,7 @@ export class IOSService {
           this.ensureValidConnection();
           
           // Procesar el lote con un pequeño delay entre requests
-          const results = await this.processBatchWithDelay(batch, title, body, requestId);
+          const results = await this.processBatchWithDelay(batch, title, body, data, requestId);
           
           const batchSuccess = results.filter(res => res.status === "fulfilled").length;
           const batchFailed = results.filter(res => res.status === "rejected");
@@ -159,19 +110,19 @@ export class IOSService {
     }
   }
 
-  private async processBatchWithDelay(tokens: string[], title: string, body: string, requestId: string): Promise<PromiseSettledResult<any>[]> {
+  private async processBatchWithDelay(tokens: string[], title: string, body: string, data: Record<string, any> | undefined, requestId: string): Promise<PromiseSettledResult<any>[]> {
     const promises = tokens.map(async (token, index) => {
       // Pequeño delay escalonado para evitar saturar la conexión
       if (index > 0) {
         await this.delay(10 * (index % 10)); // Delay de 0-90ms
       }
-      return this.sendSingleNotification(token, title, body, requestId);
+      return this.sendSingleNotification(token, title, body, data, requestId);
     });
 
     return Promise.allSettled(promises);
   }
 
-  private async sendSingleNotification(token: string, title: string, body: string, requestId: string): Promise<any> {
+  private async sendSingleNotification(token: string, title: string, body: string,data: Record<string, any> | undefined, requestId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       try {
         this.ensureValidConnection();
@@ -180,14 +131,15 @@ export class IOSService {
           throw new Error("No se pudo establecer conexión HTTP2");
         }
 
-        const payload = JSON.stringify({
+        /* const payload = JSON.stringify({
           aps: {
             alert: {
               title: title,
               body: body
             }
           }
-        });
+        }); */
+        const payload = this.preparePayload(title, body, data);
 
         const request = this.client.request({
           ":method": "POST",
@@ -255,6 +207,49 @@ export class IOSService {
         reject(error);
       }
     });
+  }
+
+  private preparePayload(title: string, body: string, data?: Record<string, any>): any {
+    const payload: any = {
+      aps: {
+        alert: {
+          title: title,
+          body: body
+        },
+        sound: "default",
+        badge: 1,
+        'mutable-content': 1, // Para permitir contenido mutable (si usas extensiones)
+        'content-available': 1 // Para notificaciones silenciosas/background
+      }
+    };
+
+    // Agregar datos personalizados fuera del objeto aps
+    if (data && Object.keys(data).length > 0) {
+      // Convertir datos para asegurar compatibilidad con APNs
+      const processedData = this.processDataForAPNs(data);
+      
+      // Los datos van al nivel raíz del payload, fuera de 'aps'
+      Object.assign(payload, processedData);
+    }
+
+    return payload;
+  }
+
+  private processDataForAPNs(data: Record<string, any>): Record<string, string> {
+    const processedData: Record<string, string> = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null) {
+        // Convertir a string
+        if (typeof value === 'object') {
+          processedData[key] = JSON.stringify(value);
+        } else {
+          processedData[key] = String(value);
+        }
+      }
+    }
+    
+    return processedData;
   }
 
   private chunkArray(array: string[], size: number): string[][] {
@@ -325,4 +320,56 @@ export class IOSService {
       logger.info("Conexión HTTP2 cerrada manualmente");
     }
   }
+
+    private initializeConnection(): void {
+    try {
+      // Cerrar conexión existente si existe
+      if (this.client && !this.client.closed && !this.client.destroyed) {
+        this.client.close();
+      }
+
+      this.client = http2.connect("https://api.push.apple.com");
+      
+      // Manejar eventos de la conexión
+      this.client.on('error', (err) => {
+        logger.error("Error en conexión HTTP2", err, { operation: 'connection' });
+        this.client = null;
+      });
+
+      this.client.on('close', () => {
+        logger.debug("Conexión HTTP2 cerrada");
+        this.client = null;
+      });
+
+      this.client.on('goaway', (errorCode, lastStreamID) => {
+        logger.warn("Servidor envió GOAWAY", { 
+          errorCode, 
+          lastStreamID,
+          message: "Reconectando..."
+        });
+        this.client = null;
+      });
+
+      logger.debug("Nueva conexión HTTP2 establecida");
+    } catch (error) {
+      logger.error("Error estableciendo conexión HTTP2", error as Error);
+      throw error;
+    }
+  }
+
+  private ensureValidConnection(): void {
+    // Verificar si necesitamos renovar el token (cada 50 minutos)
+    const now = Date.now();
+    if (now > this.tokenExpirationTime) {
+      logger.debug("Renovando token de autorización");
+      this.authorizationToken = this.getAuthorizationToken();
+    }
+
+    // Verificar si necesitamos una nueva conexión
+    if (!this.client || this.client.closed || this.client.destroyed) {
+      logger.debug("Reconectando - conexión no válida");
+      this.initializeConnection();
+    }
+  }
+
 }
