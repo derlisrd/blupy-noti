@@ -210,29 +210,22 @@ export class IOSService {
   }
 
   private preparePayload(title: string, body: string, data?: Record<string, any>): any {
-    const payload: any = {
-      aps: {
-        alert: {
-          title: title,
-          body: body
-        },
-        sound: "default",
-        badge: 1,
-        'mutable-content': 1, // Para permitir contenido mutable (si usas extensiones)
-        'content-available': 1 // Para notificaciones silenciosas/background
-      }
-    };
+    const payload: Record<string, any> = {
+    aps: {
+      alert: { title, body },
+      sound: "default",
+      badge: 1,
+      'mutable-content': 1,
+      'content-available': 1
+    }
+  };
 
     // Agregar datos personalizados fuera del objeto aps
-    if (data && Object.keys(data).length > 0) {
-      // Convertir datos para asegurar compatibilidad con APNs
-      const processedData = this.processDataForAPNs(data);
-      
-      // Los datos van al nivel raíz del payload, fuera de 'aps'
-      Object.assign(payload, processedData);
-    }
+     if (data && Object.keys(data).length > 0) {
+    Object.assign(payload, this.processDataForAPNs(data));
+  }
 
-    return payload;
+    return JSON.stringify(payload);
   }
 
   private processDataForAPNs(data: Record<string, any>): Record<string, string> {
