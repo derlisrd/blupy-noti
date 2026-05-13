@@ -15,9 +15,8 @@ const router = Router();
 router.use(apikeymiddleware as RequestHandler);
 
 
-router.get('/salud',async (req: Request, res: Response)=>{
-  console.log(req)
-  return res.json({ success: true, message: 'Salud optima.'})
+router.get('/salud', async (req: Request, res: Response): Promise<void> => {
+  res.json({ status: 'ok' })
 })
 
 router.post("/send-push-single", async (req: Request, res: Response) => {
