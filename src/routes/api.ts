@@ -21,21 +21,21 @@ router.get('/salud', async (req: Request, res: Response): Promise<void> => {
 
 router.post("/send-push-single", async (req: Request, res: Response) => {
   const response = await NotificationController.sendSingleNotification(req.body);
-  return res.json(response);
+   res.json(response);
 });
 
 router.post("/send-push-difusion", async (req: Request, res: Response) => {
   const response = await NotificationController.sendDifusionNotification(req.body);
-  return res.json(response);
+   res.json(response);
 });
 
 router.post("/send-push-ios", validateRequest(IosPushSchema), async (req: Request, res: Response) => {
   const response = await NotificationIosController.sendPushIosWithToken(req.body)
-  return res.json(response);
+   res.json(response);
 });
 router.post("/send-push-android", validateRequest(AndroidPushSchema), async (req: Request, res: Response) => {
   const response = await NotificationAndroidController.sendPushAndroidWithToken(req.body);
-  return res.json(response);
+   res.json(response);
 });
 
 export default router;
