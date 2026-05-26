@@ -214,7 +214,7 @@ export class IOSService {
     aps: {
       alert: { title, body },
       sound: "default",
-      badge: 1,
+      badge: 0,
       'mutable-content': 1,
       'content-available': 1
     }
